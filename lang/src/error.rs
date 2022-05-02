@@ -195,7 +195,7 @@ pub enum ErrorCode {
     Deprecated = 5000,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     AnchorError(AnchorError),
     ProgramError(ProgramErrorWithOrigin),
@@ -295,7 +295,7 @@ impl Error {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProgramErrorWithOrigin {
     pub program_error: ProgramError,
     pub error_origin: Option<ErrorOrigin>,
@@ -384,19 +384,19 @@ impl From<ProgramError> for ProgramErrorWithOrigin {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ComparedValues {
     Values((String, String)),
     Pubkeys((Pubkey, Pubkey)),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ErrorOrigin {
     Source(Source),
     AccountName(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AnchorError {
     pub error_name: String,
     pub error_code_number: u32,
@@ -488,7 +488,7 @@ impl std::convert::From<Error> for anchor_lang::solana_program::program_error::P
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Source {
     pub filename: &'static str,
     pub line: u32,
