@@ -8,10 +8,10 @@ license = "Apache-2.0"
 description = "CPI clients for SPL programs"
 
 [features]
-default = ["mint", "token", "associated_token"]
+#default = ["mint", "token"]#, "associated_token"]
 mint = []
-token = ["spl-token"]
-associated_token = ["spl-associated-token-account"]
+#token = ["spl-token"]
+#associated_token = ["spl-associated-token-account"]
 governance = []
 shmem = []
 devnet = []
@@ -21,5 +21,5 @@ dex = ["serum_dex"]
 anchor-lang = { path = "../lang", version = "0.24.2", features = ["derive"] }
 serum_dex = { git = "https://github.com/project-serum/serum-dex", rev = "1be91f2", version = "0.4.0", features = ["no-entrypoint"], optional = true }
 solana-program = { path = "../../sdk/program" }
-spl-token = { version = "3.1.1", features = ["no-entrypoint"], optional = true }
-spl-associated-token-account = { version = "1.0.3", features = ["no-entrypoint"], optional = true }
+#spl-token = { version = "3.3.0", features = ["no-entrypoint"], optional = true }
+#spl-associated-token-account = { version = "1.0.5", features = ["no-entrypoint"], optional = true }
