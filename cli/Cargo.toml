@@ -28,11 +28,11 @@ shellexpand = "2.1.0"
 toml = "0.5.8"
 semver = "1.0.4"
 serde = { version = "1.0.122", features = ["derive"] }
-solana-sdk = { path = "../../sdk" }
-solana-program = { path = "../../sdk/program" }
-solana-client = { path = "../../client" }
-solana-cli-config = { path = "../../cli-config" }
-solana-faucet = { path = "../../faucet" }
+solana-sdk = "1.10.11"
+solana-program = "1.10.11"
+solana-client = "1.10.11"
+solana-cli-config = "1.10.11"
+solana-faucet = "1.10.11"
 dirs = "3.0"
 heck = "0.3.1"
 flate2 = "1.0.19"
