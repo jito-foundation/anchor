@@ -23,12 +23,11 @@
 
 extern crate self as anchor_lang;
 
-use bytemuck::{Pod, Zeroable};
-use solana_program::account_info::AccountInfo;
-use solana_program::instruction::AccountMeta;
-use solana_program::pubkey::Pubkey;
-use std::collections::BTreeMap;
-use std::io::Write;
+use {
+    bytemuck::{Pod, Zeroable},
+    solana_program::{account_info::AccountInfo, instruction::AccountMeta, pubkey::Pubkey},
+    std::{collections::BTreeMap, io::Write},
+};
 
 mod account_meta;
 pub mod accounts;
@@ -43,19 +42,21 @@ pub mod idl;
 pub mod system_program;
 
 mod vec;
-pub use crate::bpf_upgradeable_state::*;
-pub use anchor_attribute_access_control::access_control;
-pub use anchor_attribute_account::{account, declare_id, zero_copy};
-pub use anchor_attribute_constant::constant;
-pub use anchor_attribute_error::*;
-pub use anchor_attribute_event::{emit, event};
-pub use anchor_attribute_interface::interface;
-pub use anchor_attribute_program::program;
-pub use anchor_attribute_state::state;
-pub use anchor_derive_accounts::Accounts;
 /// Borsh is the default serialization format for instructions and accounts.
 pub use borsh::{BorshDeserialize as AnchorDeserialize, BorshSerialize as AnchorSerialize};
-pub use solana_program;
+pub use {
+    crate::bpf_upgradeable_state::*,
+    anchor_attribute_access_control::access_control,
+    anchor_attribute_account::{account, declare_id, zero_copy},
+    anchor_attribute_constant::constant,
+    anchor_attribute_error::*,
+    anchor_attribute_event::{emit, event},
+    anchor_attribute_interface::interface,
+    anchor_attribute_program::program,
+    anchor_attribute_state::state,
+    anchor_derive_accounts::Accounts,
+    solana_program,
+};
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 
@@ -232,36 +233,41 @@ impl Key for Pubkey {
 /// The prelude contains all commonly used components of the crate.
 /// All programs should include it via `anchor_lang::prelude::*;`.
 pub mod prelude {
-    pub use super::{
-        access_control, account, accounts::account::Account,
-        accounts::account_loader::AccountLoader, accounts::program::Program,
-        accounts::signer::Signer, accounts::system_account::SystemAccount,
-        accounts::sysvar::Sysvar, accounts::unchecked_account::UncheckedAccount, constant,
-        context::Context, context::CpiContext, declare_id, emit, err, error, event, interface,
-        program, require, require_eq, require_gt, require_gte, require_keys_eq, require_keys_neq,
-        require_neq, solana_program::bpf_loader_upgradeable::UpgradeableLoaderState, source, state,
-        system_program::System, zero_copy, AccountDeserialize, AccountSerialize, Accounts,
-        AccountsExit, AnchorDeserialize, AnchorSerialize, Id, Key, Owner, ProgramData, Result,
-        ToAccountInfo, ToAccountInfos, ToAccountMetas,
+    pub use {
+        super::{
+            access_control, account,
+            accounts::{
+                account::Account, account_loader::AccountLoader, program::Program, signer::Signer,
+                system_account::SystemAccount, sysvar::Sysvar, unchecked_account::UncheckedAccount,
+            },
+            constant,
+            context::{Context, CpiContext},
+            declare_id, emit, err, error, event, interface, program, require, require_eq,
+            require_gt, require_gte, require_keys_eq, require_keys_neq, require_neq,
+            solana_program::bpf_loader_upgradeable::UpgradeableLoaderState,
+            source, state,
+            system_program::System,
+            zero_copy, AccountDeserialize, AccountSerialize, Accounts, AccountsExit,
+            AnchorDeserialize, AnchorSerialize, Id, Key, Owner, ProgramData, Result, ToAccountInfo,
+            ToAccountInfos, ToAccountMetas,
+        },
+        anchor_attribute_error::*,
+        borsh,
+        error::*,
+        solana_program::{
+            account_info::{next_account_info, AccountInfo},
+            instruction::AccountMeta,
+            msg,
+            program_error::ProgramError,
+            pubkey::Pubkey,
+            sysvar::{
+                clock::Clock, epoch_schedule::EpochSchedule, instructions::Instructions,
+                rent::Rent, rewards::Rewards, slot_hashes::SlotHashes, slot_history::SlotHistory,
+                stake_history::StakeHistory, Sysvar as SolanaSysvar,
+            },
+        },
+        thiserror,
     };
-    pub use anchor_attribute_error::*;
-    pub use borsh;
-    pub use error::*;
-    pub use solana_program::account_info::{next_account_info, AccountInfo};
-    pub use solana_program::instruction::AccountMeta;
-    pub use solana_program::msg;
-    pub use solana_program::program_error::ProgramError;
-    pub use solana_program::pubkey::Pubkey;
-    pub use solana_program::sysvar::clock::Clock;
-    pub use solana_program::sysvar::epoch_schedule::EpochSchedule;
-    pub use solana_program::sysvar::instructions::Instructions;
-    pub use solana_program::sysvar::rent::Rent;
-    pub use solana_program::sysvar::rewards::Rewards;
-    pub use solana_program::sysvar::slot_hashes::SlotHashes;
-    pub use solana_program::sysvar::slot_history::SlotHistory;
-    pub use solana_program::sysvar::stake_history::StakeHistory;
-    pub use solana_program::sysvar::Sysvar as SolanaSysvar;
-    pub use thiserror;
 }
 
 /// Internal module used by macros and unstable apis.
@@ -271,17 +277,11 @@ pub mod __private {
     /// The discriminator anchor uses to mark an account as closed.
     pub const CLOSED_ACCOUNT_DISCRIMINATOR: [u8; 8] = [255, 255, 255, 255, 255, 255, 255, 255];
 
-    pub use crate::ctor::Ctor;
-
-    pub use anchor_attribute_account::ZeroCopyAccessor;
-
-    pub use anchor_attribute_event::EventIndex;
-
-    pub use base64;
-
-    pub use bytemuck;
-
     use solana_program::pubkey::Pubkey;
+    pub use {
+        crate::ctor::Ctor, anchor_attribute_account::ZeroCopyAccessor,
+        anchor_attribute_event::EventIndex, base64, bytemuck,
+    };
 
     pub mod state {
         pub use crate::accounts::state::*;
@@ -304,7 +304,7 @@ pub mod __private {
     #[doc(hidden)]
     impl ZeroCopyAccessor<Pubkey> for [u8; 32] {
         fn get(&self) -> Pubkey {
-            Pubkey::new(self)
+            Pubkey::from(*self)
         }
         fn set(input: &Pubkey) -> [u8; 32] {
             input.to_bytes()
