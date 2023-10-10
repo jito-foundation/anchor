@@ -91,6 +91,8 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
         }
     };
 
+    let event_cpi_mod = generate_event_cpi_mod();
+
     let non_inlined_handlers: Vec<proc_macro2::TokenStream> = program
         .ixs
         .iter()
@@ -111,15 +113,15 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
             quote! {
                 #[inline(never)]
                 pub fn #ix_method_name(
-                    program_id: &Pubkey,
-                    accounts: &[AccountInfo],
-                    ix_data: &[u8],
+                    __program_id: &Pubkey,
+                    __accounts: &[AccountInfo],
+                    __ix_data: &[u8],
                 ) -> anchor_lang::Result<()> {
                     #[cfg(not(feature = "no-log-ix-name"))]
                     anchor_lang::prelude::msg!(#ix_name_log);
 
                     // Deserialize data.
-                    let ix = instruction::#ix_name::deserialize(&mut &ix_data[..])
+                    let ix = instruction::#ix_name::deserialize(&mut &__ix_data[..])
                         .map_err(|_| anchor_lang::error::ErrorCode::InstructionDidNotDeserialize)?;
                     let instruction::#variant_arm = ix;
 
@@ -129,11 +131,11 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                     let mut __reallocs = std::collections::BTreeSet::new();
 
                     // Deserialize accounts.
-                    let mut remaining_accounts: &[AccountInfo] = accounts;
-                    let mut accounts = #anchor::try_accounts(
-                        program_id,
-                        &mut remaining_accounts,
-                        ix_data,
+                    let mut __remaining_accounts: &[AccountInfo] = __accounts;
+                    let mut __accounts = #anchor::try_accounts(
+                        __program_id,
+                        &mut __remaining_accounts,
+                        __ix_data,
                         &mut __bumps,
                         &mut __reallocs,
                     )?;
@@ -141,9 +143,9 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                     // Invoke user defined handler.
                     let result = #program_name::#ix_method_name(
                         anchor_lang::context::Context::new(
-                            program_id,
-                            &mut accounts,
-                            remaining_accounts,
+                            __program_id,
+                            &mut __accounts,
+                            __remaining_accounts,
                             __bumps,
                         ),
                         #(#ix_arg_names),*
@@ -153,7 +155,7 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                     #maybe_set_return_data
 
                     // Exit routine.
-                    accounts.exit(program_id)
+                    __accounts.exit(__program_id)
                 }
             }
         })
@@ -173,14 +175,14 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
                 #idl_accounts_and_functions
             }
 
-
-
             /// __global mod defines wrapped handlers for global instructions.
             pub mod __global {
                 use super::*;
 
                 #(#non_inlined_handlers)*
             }
+
+            #event_cpi_mod
         }
     }
 }
@@ -188,4 +190,50 @@ pub fn generate(program: &Program) -> proc_macro2::TokenStream {
 fn generate_ix_variant_name(name: String) -> proc_macro2::TokenStream {
     let n = name.to_camel_case();
     n.parse().unwrap()
+}
+
+/// Generate the event module based on whether the `event-cpi` feature is enabled.
+fn generate_event_cpi_mod() -> proc_macro2::TokenStream {
+    #[cfg(feature = "event-cpi")]
+    {
+        let authority = crate::parser::accounts::event_cpi::EventAuthority::get();
+        let authority_name = authority.name;
+        let authority_seeds = authority.seeds;
+
+        quote! {
+            /// __events mod defines handler for self-cpi based event logging
+            pub mod __events {
+                use super::*;
+
+                #[inline(never)]
+                pub fn __event_dispatch(
+                    program_id: &Pubkey,
+                    accounts: &[AccountInfo],
+                    event_data: &[u8],
+                ) -> anchor_lang::Result<()> {
+                    let given_event_authority = next_account_info(&mut accounts.iter())?;
+                    if !given_event_authority.is_signer {
+                        return Err(anchor_lang::error::Error::from(
+                            anchor_lang::error::ErrorCode::ConstraintSigner,
+                        )
+                        .with_account_name(#authority_name));
+                    }
+
+                    let (expected_event_authority, _) =
+                        Pubkey::find_program_address(&[#authority_seeds], &program_id);
+                    if given_event_authority.key() != expected_event_authority {
+                        return Err(anchor_lang::error::Error::from(
+                            anchor_lang::error::ErrorCode::ConstraintSeeds,
+                        )
+                        .with_account_name(#authority_name)
+                        .with_pubkeys((given_event_authority.key(), expected_event_authority)));
+                    }
+
+                    Ok(())
+                }
+            }
+        }
+    }
+    #[cfg(not(feature = "event-cpi"))]
+    quote! {}
 }

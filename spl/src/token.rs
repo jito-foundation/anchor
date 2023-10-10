@@ -130,6 +130,34 @@ pub fn approve<'info>(
     .map_err(Into::into)
 }
 
+pub fn approve_checked<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, ApproveChecked<'info>>,
+    amount: u64,
+    decimals: u8,
+) -> Result<()> {
+    let ix = spl_token::instruction::approve_checked(
+        &spl_token::ID,
+        ctx.accounts.to.key,
+        ctx.accounts.mint.key,
+        ctx.accounts.delegate.key,
+        ctx.accounts.authority.key,
+        &[],
+        amount,
+        decimals,
+    )?;
+    solana_program::program::invoke_signed(
+        &ix,
+        &[
+            ctx.accounts.to.clone(),
+            ctx.accounts.mint.clone(),
+            ctx.accounts.delegate.clone(),
+            ctx.accounts.authority.clone(),
+        ],
+        ctx.signer_seeds,
+    )
+    .map_err(Into::into)
+}
+
 pub fn revoke<'info>(ctx: CpiContext<'_, '_, '_, 'info, Revoke<'info>>) -> Result<()> {
     let ix = spl_token::instruction::revoke(
         &spl_token::ID,
@@ -356,6 +384,14 @@ pub struct Approve<'info> {
 }
 
 #[derive(Accounts)]
+pub struct ApproveChecked<'info> {
+    pub to: AccountInfo<'info>,
+    pub mint: AccountInfo<'info>,
+    pub delegate: AccountInfo<'info>,
+    pub authority: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
 pub struct Revoke<'info> {
     pub source: AccountInfo<'info>,
     pub authority: AccountInfo<'info>,
@@ -450,6 +486,9 @@ impl Deref for TokenAccount {
     }
 }
 
+#[cfg(feature = "idl-build")]
+impl anchor_lang::IdlBuild for TokenAccount {}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Mint(spl_token::state::Mint);
 
@@ -480,6 +519,9 @@ impl Deref for Mint {
         &self.0
     }
 }
+
+#[cfg(feature = "idl-build")]
+impl anchor_lang::IdlBuild for Mint {}
 
 #[derive(Clone)]
 pub struct Token;
